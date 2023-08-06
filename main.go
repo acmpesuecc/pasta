@@ -17,6 +17,7 @@ const maxFileSize int64 = 1 * 1024 * 1024 // 1 MB in bytes
 func main() {
 	http.HandleFunc("/", handlePaste)
 	http.HandleFunc("/data/", viewDataHandler)
+	http.HandleFunc("/robots.txt", serveRobotsTxt)
 
 	port := "8080"
 	fmt.Printf("Starting server on port: %s...\n", port)
@@ -26,13 +27,22 @@ func main() {
 	}
 }
 
+func serveRobotsTxt(w http.ResponseWriter, r *http.Request) {
+	robotsTxt := `User-agent: *
+Disallow: /`
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(robotsTxt))
+}
+
 func handlePaste(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, fmt.Sprintf("$ curl -d @file.txt %s", sitename), http.StatusMethodNotAllowed) // curl only
 		return
 	}
 
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, maxFileSize))
+	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize)
+
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error", http.StatusBadRequest)
 		return
@@ -114,3 +124,4 @@ func generateRandomID() string {
 	rand.Read(id)
 	return hex.EncodeToString(id)
 }
+

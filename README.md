@@ -1,8 +1,10 @@
 # pasta
 
-A pastebin written in golang: served from — x.polarhive.net
+pastebin: written in golang
 
-!WIP
+```
+$ curl -d @file.txt https://x.polarhive.net
+```
 
 ---
 This repo is hosted on [Codeberg](https://polarhive.net/pasta) & mirrored to [GitHub](https://polarhive.net/github) for traffic.
