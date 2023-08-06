@@ -3,7 +3,7 @@
 pastebin: written in golang
 
 ```
-$ curl -d @file.txt https://x.polarhive.net
+$ curl -d "@file.txt" "https://x.polarhive.net"
 ```
 
 ---
