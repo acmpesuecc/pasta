@@ -37,7 +37,7 @@ Disallow: /`
 // usage
 func handlePaste(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, fmt.Sprintf(`$ curl -d "@file.txt" "%s"`, sitename), http.StatusMethodNotAllowed) // curl only
+		http.Error(w, fmt.Sprintf("usage:\ncurl -d \"@file.txt\" \"%s\"", sitename), http.StatusMethodNotAllowed)
 		return
 	}
 

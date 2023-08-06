@@ -1,10 +1,17 @@
 # pasta
 
-pastebin: written in golang
+minimal pastebin: written in go 🤌
 
+## usage
 ```
 $ curl -d "@file.txt" "https://x.polarhive.net"
 ```
+
+#### limitations
+
+I set it up on my server for my personal use. [Ping](https://polarhive.net/contact) me if you wish to use my resources (no spam lol)
+
+> I may delete your files at any time.
 
 ---
 This repo is hosted on [Codeberg](https://polarhive.net/pasta) & mirrored to [GitHub](https://polarhive.net/github) for traffic.
