@@ -1,5 +1,6 @@
 // polarhive.net/pasta
 package main
+
 import (
 	"crypto/rand"
 	"encoding/hex"
@@ -9,6 +10,9 @@ import (
 	"net/http"
 	"os"
 )
+
+var sitename = "https://x.polarhive.net"
+const maxFileSize int64 = 1 * 1024 * 1024 // 1 MB in bytes
 
 func main() {
 	http.HandleFunc("/", handlePaste)
@@ -23,9 +27,19 @@ func main() {
 }
 
 func handlePaste(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
+	if r.Method != http.MethodPost {
+		http.Error(w, fmt.Sprintf("$ curl -d @file.txt %s", sitename), http.StatusMethodNotAllowed) // curl only
+		return
+	}
+
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, maxFileSize))
 	if err != nil {
 		http.Error(w, "Error", http.StatusBadRequest)
+		return
+	}
+
+	if len(body) == 0 {
+		http.Error(w, "Empty request body", http.StatusBadRequest)
 		return
 	}
 
@@ -37,24 +51,45 @@ func handlePaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// write to disk
-	file, err := os.Create("data/" + id) // Save data in the "data" folder
-	if err != nil {
-		http.Error(w, "Error saving data", http.StatusInternalServerError)
+	// check if empty
+	if !isEmptyFile(body) {
+		// write to disk
+		file, err := os.Create("data/" + id) // Save data in the "data" folder
+		if err != nil {
+			http.Error(w, "Error saving data", http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+
+		_, err = file.Write(body)
+		if err != nil {
+			http.Error(w, "Error saving data", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, "Received file is empty", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
 
-	_, err = file.Write(body)
-	if err != nil {
-		http.Error(w, "Error saving data", http.StatusInternalServerError)
-		return
+	fmt.Fprintf(w, "%s/data/%s\n", sitename, id)
+}
+
+// check if empty
+func isEmptyFile(data []byte) bool {
+	for _, b := range data {
+		if b != 0 {
+			return false
+		}
 	}
-
-	fmt.Fprintf(w, "Paste received and stored with ID: %s\n", id)
+	return true
 }
 
 func viewDataHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed) // curl only
+		return
+	}
+
 	// get ID
 	id := r.URL.Path[len("/data/"):]
 
