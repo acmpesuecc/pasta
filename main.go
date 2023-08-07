@@ -27,6 +27,7 @@ func main() {
 	}
 }
 
+// no robots
 func serveRobotsTxt(w http.ResponseWriter, r *http.Request) {
 	robotsTxt := `User-agent: *
 Disallow: /`
@@ -37,26 +38,39 @@ Disallow: /`
 // usage
 func handlePaste(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, fmt.Sprintf("usage:\ncurl -d \"@file.txt\" \"%s\"", sitename), http.StatusMethodNotAllowed)
+		http.Error(w, fmt.Sprintf("usage:\ncurl -F \"file=@file.txt\" \"%s\"", sitename), http.StatusMethodNotAllowed)
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize)
-
-	body, err := ioutil.ReadAll(r.Body)
+	err := r.ParseMultipartForm(maxFileSize)
 	if err != nil {
-                http.Error(w, "File size > 1 MB", http.StatusBadRequest)
-                return
+		http.Error(w, "File size > 1 MB", http.StatusBadRequest)
+		return
 	}
 
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "Failed to get file from form", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// check file's data
+	body, err := ioutil.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Error reading file data", http.StatusInternalServerError)
+		return
+	}
+
+        // no empty files
 	if len(body) == 0 {
-                http.Error(w, "Empty file", http.StatusBadRequest)
-                return
+		http.Error(w, "Empty file", http.StatusBadRequest)
+		return
 	}
 
-	// random ID
+	// gen random ID
 	id := generateRandomID()
-	err = os.MkdirAll("data", 0755) // Save data in the "data" folder
+	err = os.MkdirAll("data", 0755)
 	if err != nil {
 		http.Error(w, "Error creating folder", http.StatusInternalServerError)
 		return
@@ -64,15 +78,15 @@ func handlePaste(w http.ResponseWriter, r *http.Request) {
 
 	// check if empty
 	if !isEmptyFile(body) {
-		// write to disk
-		file, err := os.Create("data/" + id) // Save data in the "data" folder
+		newFilePath := "data/" + id
+		newFile, err := os.Create(newFilePath)
 		if err != nil {
 			http.Error(w, "Error saving data", http.StatusInternalServerError)
 			return
 		}
-		defer file.Close()
+		defer newFile.Close()
 
-		_, err = file.Write(body)
+		_, err = newFile.Write(body)
 		if err != nil {
 			http.Error(w, "Error saving data", http.StatusInternalServerError)
 			return
@@ -101,10 +115,9 @@ func viewDataHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get ID
 	id := r.URL.Path[len("/data/"):]
 
-	// get paste from the corresponding ID
+	// get paste from ID
 	file, err := os.Open("data/" + id)
 	if err != nil {
 		http.Error(w, "Paste not found", http.StatusNotFound)
@@ -112,7 +125,7 @@ func viewDataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// send paste to the client
+	// send paste to user
 	_, err = io.Copy(w, file)
 	if err != nil {
 		http.Error(w, "Error serving paste", http.StatusInternalServerError)
@@ -125,4 +138,3 @@ func generateRandomID() string {
 	rand.Read(id)
 	return hex.EncodeToString(id)
 }
-
