@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-var sitename = "https://x.polarhive.net"
+var sitename = "http://localhost:8080" // skip port no if pushing to prod
 const maxFileSize int64 = 1 * 1024 * 1024 // 1 MB in bytes
 
 func main() {

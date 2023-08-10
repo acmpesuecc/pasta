@@ -4,7 +4,7 @@ minimal pastebin: written in go 🤌
 
 ## usage
 ```
-$ curl -d "@file.txt" "https://x.polarhive.net"
+$ curl -F "file=@file.txt" "localhost:8080"
 ```
 
 #### limitations
