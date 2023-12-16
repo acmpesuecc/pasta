@@ -6,12 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 )
 
-var sitename = "http://localhost:8080" // skip port no if pushing to prod
+var sitename = "http://localhost:8080" // skip port number if pushing to prod
 const maxFileSize int64 = 1 * 1024 * 1024 // 1 MB in bytes
 
 func main() {
@@ -56,7 +55,7 @@ func handlePaste(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	// check file's data
-	body, err := ioutil.ReadAll(file)
+	body, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, "Error reading file data", http.StatusInternalServerError)
 		return
