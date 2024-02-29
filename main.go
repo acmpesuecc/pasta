@@ -1,4 +1,3 @@
-// polarhive.net/pasta
 package main
 
 import (
@@ -10,7 +9,7 @@ import (
 	"os"
 )
 
-var sitename = "http://localhost:8080" // skip port number if pushing to prod
+var sitename = "http://localhost:8080"    // skip port number if pushing to prod
 const maxFileSize int64 = 1 * 1024 * 1024 // 1 MB in bytes
 
 func main() {
@@ -61,7 +60,7 @@ func handlePaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-        // no empty files
+	// no empty files
 	if len(body) == 0 {
 		http.Error(w, "Empty file", http.StatusBadRequest)
 		return
@@ -113,17 +112,18 @@ func viewDataHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed) // curl only
 		return
 	}
-
 	id := r.URL.Path[len("/data/"):]
-
 	// get paste from ID
 	file, err := os.Open("data/" + id)
 	if err != nil {
-		http.Error(w, "Paste not found", http.StatusNotFound)
+		if os.IsNotExist(err) {
+			http.Error(w, "Paste not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Error accessing paste", http.StatusInternalServerError)
+		}
 		return
 	}
 	defer file.Close()
-
 	// send paste to user
 	_, err = io.Copy(w, file)
 	if err != nil {
