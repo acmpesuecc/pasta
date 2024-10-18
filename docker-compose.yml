@@ -2,7 +2,7 @@ services:
   pasta:
     build: .
     ports:
-      - "${PASTA_PORT}:8080"
+      - "${PASTA_PORT:-8080}:8080"
       - "80:80"
     # volumes:
     # - ./data:/data Uncomment if you want to have local access to the data
