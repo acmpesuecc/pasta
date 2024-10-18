@@ -2,11 +2,13 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 var sitename = "http://localhost:8080"    // skip port number if pushing to prod
@@ -33,7 +35,7 @@ Disallow: /`
 	w.Write([]byte(robotsTxt))
 }
 
-// usage
+// handle file upload
 func handlePaste(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, fmt.Sprintf("usage:\ncurl -F \"file=@file.txt\" \"%s\"", sitename), http.StatusMethodNotAllowed)
@@ -53,7 +55,7 @@ func handlePaste(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// check file's data
+	// read file data
 	body, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, "Error reading file data", http.StatusInternalServerError)
@@ -66,18 +68,22 @@ func handlePaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// gen random ID
-	id := generateRandomID()
+	// compute hash of file contents
+	hash := sha256.Sum256(body)
+	hashStr := hex.EncodeToString(hash[:])
+
 	err = os.MkdirAll("data", 0755)
 	if err != nil {
 		http.Error(w, "Error creating folder", http.StatusInternalServerError)
 		return
 	}
 
-	// check if empty
-	if !isEmptyFile(body) {
-		newFilePath := "data/" + id
-		newFile, err := os.Create(newFilePath)
+	filePath := filepath.Join("data", hashStr)
+
+	// check if file with the same hash already exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		// create new file if it doesn't exist
+		newFile, err := os.Create(filePath)
 		if err != nil {
 			http.Error(w, "Error saving data", http.StatusInternalServerError)
 			return
@@ -89,22 +95,10 @@ func handlePaste(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error saving data", http.StatusInternalServerError)
 			return
 		}
-	} else {
-		http.Error(w, "Received file is empty", http.StatusBadRequest)
-		return
 	}
 
-	fmt.Fprintf(w, "%s/data/%s\n", sitename, id)
-}
-
-// check if empty
-func isEmptyFile(data []byte) bool {
-	for _, b := range data {
-		if b != 0 {
-			return false
-		}
-	}
-	return true
+	// return URL to the file (reuse if already exists)
+	fmt.Fprintf(w, "%s/data/%s\n", sitename, hashStr)
 }
 
 func viewDataHandler(w http.ResponseWriter, r *http.Request) {
@@ -113,25 +107,29 @@ func viewDataHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := r.URL.Path[len("/data/"):]
-	// get paste from ID
-	file, err := os.Open("data/" + id)
+
+	// open file by hash
+	filePath := filepath.Join("data", id)
+	file, err := os.Open(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			http.Error(w, "Paste not found", http.StatusNotFound)
+			http.Error(w, "File not found", http.StatusNotFound)
 		} else {
-			http.Error(w, "Error accessing paste", http.StatusInternalServerError)
+			http.Error(w, "Error accessing file", http.StatusInternalServerError)
 		}
 		return
 	}
 	defer file.Close()
-	// send paste to user
+
+	// send file contents to client
 	_, err = io.Copy(w, file)
 	if err != nil {
-		http.Error(w, "Error serving paste", http.StatusInternalServerError)
+		http.Error(w, "Error serving file", http.StatusInternalServerError)
 		return
 	}
 }
 
+// utility to generate random ID (can be kept if needed)
 func generateRandomID() string {
 	id := make([]byte, 4) // id length
 	rand.Read(id)
