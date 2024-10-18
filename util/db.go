@@ -7,6 +7,7 @@ package util
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -20,6 +21,20 @@ type Paste struct {
 
 type DB struct {
 	*sql.DB
+}
+
+func InitDB() (*DB, error) {
+
+	db, err := NewDB("pastebin.db")
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	if err := db.InitSchema(); err != nil {
+		log.Fatalf("Failed to initialize schema: %v", err)
+	}
+
+	return db, err
 }
 
 func NewDB(dataSourceName string) (*DB, error) {
