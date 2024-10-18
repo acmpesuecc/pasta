@@ -20,7 +20,7 @@ The docker container can be started either using the `docker run` command or usi
 #### docker run
 ```
 docker build -t pasta:latest .
-docker run -d -p 8080:8080 pasta
+docker run -d -p 8080:8080 pasta:latest
 ```
 
 #### docker-compose
