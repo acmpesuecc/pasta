@@ -5,8 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
-	"os"
+	"strings"
 
 	"codeberg.org/polarhive/pasta/util"
 	"github.com/labstack/echo/v4"
@@ -21,10 +22,15 @@ func registerCrudRoutes(router *echo.Echo, db *util.DB) {
 	router.POST("/delete/:id", handleDelete(db))
 }
 
+func getSiteName(c echo.Context) string {
+	scheme := c.Scheme()
+	host := c.Request().Host
+	return fmt.Sprintf("%s://%s", scheme, host)
+}
+
 func handleCreate(db *util.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		file, err := c.FormFile("file")
-		sitename := "http://localhost:" + os.Getenv("SERVER_PORT")
 		if err != nil {
 			return c.String(http.StatusBadRequest, "Failed to get file from form")
 		}
@@ -51,15 +57,15 @@ func handleCreate(db *util.DB) echo.HandlerFunc {
 		id := generateRandomID()
 		paste := &util.Paste{
 			ID:      id,
-			Content: string(body),
+			Content: body,
 		}
 
 		if err := db.Create(paste); err != nil {
-			fmt.Println(err)
 			return c.String(http.StatusInternalServerError, "Error saving data")
 		}
 
-		return c.String(http.StatusOK, fmt.Sprintf("%s/data/%s\n", sitename, id))
+		siteName := getSiteName(c)
+		return c.String(http.StatusOK, fmt.Sprintf("%s/data/%s\n", siteName, id))
 	}
 }
 
@@ -70,7 +76,19 @@ func handleRead(db *util.DB) echo.HandlerFunc {
 		if err != nil {
 			return c.String(http.StatusNotFound, "Paste not found")
 		}
-		return c.Blob(http.StatusOK, "text/plain; charset=utf-8", []byte(paste.Content))
+
+		contentType := http.DetectContentType(paste.Content)
+		if strings.HasPrefix(contentType, "text/") {
+			return c.Blob(http.StatusOK, "text/plain; charset=utf-8", paste.Content)
+		}
+
+		// For non-text content, try to determine the file extension
+		ext := getFileExtension(paste.Content)
+		if ext != "" {
+			c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=paste%s", ext))
+		}
+
+		return c.Blob(http.StatusOK, contentType, paste.Content)
 	}
 }
 
@@ -78,7 +96,6 @@ func handleUpdate(db *util.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		file, err := c.FormFile("file")
-		sitename := "http://localhost:" + os.Getenv("SERVER_PORT")
 		if err != nil {
 			return c.String(http.StatusBadRequest, "Failed to get file from form")
 		}
@@ -104,14 +121,15 @@ func handleUpdate(db *util.DB) echo.HandlerFunc {
 
 		paste := &util.Paste{
 			ID:      id,
-			Content: string(body),
+			Content: body,
 		}
 
 		if err := db.Update(paste); err != nil {
 			return c.String(http.StatusInternalServerError, "Error updating data")
 		}
 
-		return c.String(http.StatusOK, fmt.Sprintf("Updated paste: %s/data/%s\n", sitename, id))
+		siteName := getSiteName(c)
+		return c.String(http.StatusOK, fmt.Sprintf("Updated paste: %s/data/%s\n", siteName, id))
 	}
 }
 
@@ -138,4 +156,13 @@ func generateRandomID() string {
 	id := make([]byte, 4)
 	rand.Read(id)
 	return hex.EncodeToString(id)
+}
+
+func getFileExtension(content []byte) string {
+	contentType := http.DetectContentType(content)
+	exts, _ := mime.ExtensionsByType(contentType)
+	if len(exts) > 0 {
+		return exts[0]
+	}
+	return ""
 }

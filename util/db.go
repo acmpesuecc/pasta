@@ -15,7 +15,7 @@ import (
 
 type Paste struct {
 	ID        string
-	Content   string
+	Content   []byte
 	CreatedAt time.Time
 }
 
@@ -24,7 +24,6 @@ type DB struct {
 }
 
 func InitDB() (*DB, error) {
-
 	db, err := NewDB("pastebin.db")
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
@@ -54,7 +53,7 @@ func (db *DB) InitSchema() error {
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS pastes (
 			id TEXT NOT NULL PRIMARY KEY,
-			content TEXT,
+			content BLOB,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	`)
