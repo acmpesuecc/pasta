@@ -13,12 +13,13 @@ import (
 )
 
 var (
-	sitename          = "http://localhost:8080" // skip port number if pushing to prod
-	maxFileSize int64 = 1 * 1024 * 1024         // 1 MB in bytes
-	passphrase        = os.Getenv("PASSPHRASE")
-	cooldown          = os.Getenv("COOLDOWN")
-	rateLimiter       = NewRateLimiter(cooldown, time.Minute)
+	sitename    = "http://localhost:8080" // skip port number if pushing to prod
+	passphrase  = os.Getenv("PASSPHRASE")
+	cooldown    = os.Getenv("COOLDOWN")
+	rateLimiter = NewRateLimiter(cooldown, time.Minute)
 )
+
+const maxFileSize int64 = 1 * 1024 * 1024 in bytes
 
 type RateLimiter struct {
 	visitors map[string]int
@@ -122,21 +123,33 @@ func handlePaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newFilePath := "data/" + id
-	newFile, err := os.Create(newFilePath)
-	if err != nil {
-		http.Error(w, "Error saving data", http.StatusInternalServerError)
-		return
+	if !isEmptyFile(body) {
+		newFilePath := "data/" + id
+		newFile, err := os.Create(newFilePath)
+		if err != nil {
+			http.Error(w, "Error saving data", http.StatusInternalServerError)
+			return
+		}
+		defer newFile.Close()
+		_, err = newFile.Write(body)
+		if err != nil {
+			http.Error(w, "Error saving data", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, "Received file is empty", http.StatusBadRequest)
 	}
-	defer newFile.Close()
-
-	_, err = newFile.Write(body)
-	if err != nil {
-		http.Error(w, "Error saving data", http.StatusInternalServerError)
-		return
-	}
-
 	fmt.Fprintf(w, "%s/data/%s\n", sitename, id)
+}
+
+// check if empty
+func isEmptyFile(data []byte) bool {
+	for _, b := range data {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func viewDataHandler(w http.ResponseWriter, r *http.Request) {
