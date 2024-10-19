@@ -16,7 +16,8 @@ var (
 	sitename    = "http://localhost:8080" // skip port number if pushing to prod
 	passphrase  = os.Getenv("PASSPHRASE")
 	cooldown    = os.Getenv("COOLDOWN")
-	rateLimiter = NewRateLimiter(cooldown, time.Minute)
+	limit_val   = os.Getenv("LIMIT")
+	rateLimiter = NewRateLimiter(limit_val, cooldown * time.Minute)
 )
 
 const maxFileSize int64 = 1 * 1024 * 1024 in bytes
