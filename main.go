@@ -16,7 +16,8 @@ var (
 	sitename          = "http://localhost:8080" // skip port number if pushing to prod
 	maxFileSize int64 = 1 * 1024 * 1024         // 1 MB in bytes
 	passphrase        = os.Getenv("PASSPHRASE")
-	rateLimiter       = NewRateLimiter(5, time.Minute) // 5 requests per minute
+	cooldown          = os.Getenv("COOLDOWN")
+	rateLimiter       = NewRateLimiter(cooldown, time.Minute)
 )
 
 type RateLimiter struct {
@@ -56,7 +57,6 @@ func main() {
 
 	port := "8080"
 	fmt.Printf("Starting server on port: %s...\n", port)
-	fmt.Println(passphrase)
 	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		fmt.Printf("Error starting server: %s\n", err)
