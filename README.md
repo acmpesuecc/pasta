@@ -4,8 +4,10 @@ minimal pastebin: written in go 🤌
 
 ## usage
 ```
-$ curl -F "file=@file.txt" "localhost:8080"
+$ export PASSPHRASE="your-key"
+$ curl -F "file=@file.txt" "localhost:8080" -H "X-Auth-Passphrase: your-key"
 ```
+The rate limiter has a 1 minute cooldown.
 
 ### install
 
