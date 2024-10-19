@@ -12,22 +12,12 @@ $ curl -F "file=@file.txt" "localhost:8080"
 ```
 go install codeberg.org/polarhive/pasta@latest
 ```
-
-### docker usage
-
-The docker container can be started either using the `docker run` command or using the `docker-compose.yml` file included.
-
-#### docker run
+### Systemd Service
+```sh
+$ cp pasta.service /etc/systemd/system/pasta.service
+$ systemctl enable --now pasta.service
 ```
-docker build -t pasta:latest .
-docker run -d -p 8080:8080 pasta
-```
-
-#### docker-compose
-```
-docker-compose build
-docker-compose up
-```
+If pasta is in the home directory, the pasta-user.service can be used instead, while replacing $USER with the user's username.
 
 ### limitations
 
