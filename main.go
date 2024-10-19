@@ -7,20 +7,21 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 var (
-	sitename    = "http://localhost:8080" // skip port number if pushing to prod
-	passphrase  = os.Getenv("PASSPHRASE")
-	cooldown    = os.Getenv("COOLDOWN")
-	limit_val   = os.Getenv("LIMIT")
-	rateLimiter = NewRateLimiter(limit_val, cooldown * time.Minute)
+	sitename        = "http://localhost:8080" // skip port number if pushing to prod
+	passphrase      = os.Getenv("PASSPHRASE")
+	cooldown, err1  = strconv.Atoi(os.Getenv("COOLDOWN"))
+	limit_val, err2 = strconv.Atoi(os.Getenv("LIMIT"))
+	rateLimiter     = NewRateLimiter(limit_val, time.Duration(cooldown)*time.Minute)
 )
 
-const maxFileSize int64 = 1 * 1024 * 1024 in bytes
+const maxFileSize int64 = 1 * 1024 * 1024 //in bytes
 
 type RateLimiter struct {
 	visitors map[string]int
