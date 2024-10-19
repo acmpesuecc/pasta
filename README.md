@@ -9,7 +9,7 @@ $ export COOLDOWN="time-in-minutes"
 $ export LIMIT="number-of-requests-per-cooldown"
 $ curl -F "file=@file.txt" "localhost:8080" -H "X-Auth-Passphrase: your-key"
 ```
-The rate limiter has a 1 minute cooldown.
+
 
 ### install
 
