@@ -1,0 +1,7 @@
+[Service]
+ExecStart=/usr/bin/pasta
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
