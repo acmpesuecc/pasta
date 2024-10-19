@@ -14,7 +14,7 @@ go install codeberg.org/polarhive/pasta@latest
 ```
 ### systemd service
 ```sh
-$ cp pasta.service /etc/systemd/system/pasta.service
+# cp pasta.service /etc/systemd/system/pasta.service
 $ systemctl enable --now pasta.service
 ```
 If pasta is in the home directory, the pasta-user.service can be used instead, while replacing $USER with the user's username.
