@@ -12,7 +12,7 @@ $ curl -F "file=@file.txt" "localhost:8080"
 ```
 go install codeberg.org/polarhive/pasta@latest
 ```
-### Systemd Service
+### systemd service
 ```sh
 $ cp pasta.service /etc/systemd/system/pasta.service
 $ systemctl enable --now pasta.service
